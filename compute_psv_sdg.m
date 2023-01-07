@@ -1,5 +1,17 @@
 function struct_sdg = compute_psv_sdg(data_eeg, pks_indx)
 
+
+%% get heartbeats timings
+%data
+time = data_eeg.time{1};
+t_heartbeats = time(pks_indx);
+IBI = diff(t_heartbeats);
+t_IBI = time(pks_indx(1:length(IBI)));
+
+%% Poincare
+wind = 15;
+[CSI_out, CVI_out, t_out] = compute_CSI_CVI(IBI, t_IBI, wind);
+
 %% frequency analysis
 cfg              = [];
 cfg.output       = 'pow';
@@ -12,17 +24,19 @@ cfg.toi          = '50%';  % 2s 50p,
 freq = ft_freqanalysis(cfg, data_eeg);
 
 %% remove nans
-time = data_eeg.time{1};
 time2 = freq.time;
 time3 = time2(2:length(time2)-2);
-t1 = max([time3(1) time(pks_indx(1))]);
-t2 = min([time3(end) time(pks_indx(end))]);
+t1 = max([time3(1) t_out(1)]);
+t2 = min([time3(end) t_out(end)]);
 time3 = time3(time3 >=t1 & time3 <=t2);
 
 cfg = [];
 %cfg.frequency = [1 45];
 cfg.latency = [time3(1) time3(end)];
 freq = ft_selectdata(cfg, freq);
+
+CSI = interp1(t_out,CSI_out,time3,'spline');
+CVI = interp1(t_out,CVI_out,time3,'spline');
 
 %% freq bands
 freq_epoch = freq; freq_epoch = rmfield(freq_epoch,{'powspctrm','freq'});
@@ -49,18 +63,6 @@ freq_alpha.dimord = 'chan_time';
 freq_beta.dimord = 'chan_time';
 freq_gamma.dimord = 'chan_time';
 
-%% get heartbeats timings
-%data
-t_heartbeats = time(pks_indx);
-IBI = diff(t_heartbeats);
-t_IBI = time(pks_indx(1:length(IBI)));
-
-%% Poincare
-wind = 15;
-[CSI_out, CVI_out, t_out] = compute_CSI_CVI(IBI, t_IBI, wind);
-
-CSI = interp1(t_out,CSI_out,time3,'spline');
-CVI = interp1(t_out,CVI_out,time3,'spline');
 
 %% BHI
 win_RR = 15; % seconds
@@ -74,28 +76,35 @@ Fs = 1;
 
 % delta
 EEG_comp = freq_delta.trial{1}; 
-[bhi_CSI_delta, bhi_CVI_delta, bhi_delta_CSI, bhi_delta_CVI, ~, ~] = mode_psv_sdg(EEG_comp, IBI, t_IBI, CSI, CVI, Fs, time, wind); 
+[bhi_CSI_delta, bhi_CVI_delta, bhi_delta_CSI, bhi_delta_CVI, ~, ~] = model_psv_sdg(EEG_comp, IBI, t_IBI, CSI, CVI, Fs, time, wind); 
 
 %theta
 EEG_comp = freq_theta.trial{1}; 
-[bhi_CSI_theta, bhi_CVI_theta, bhi_theta_CSI, bhi_theta_CVI, ~, ~] = mode_psv_sdg(EEG_comp, IBI, t_IBI, CSI, CVI, Fs, time, wind); 
+[bhi_CSI_theta, bhi_CVI_theta, bhi_theta_CSI, bhi_theta_CVI, ~, ~] = model_psv_sdg(EEG_comp, IBI, t_IBI, CSI, CVI, Fs, time, wind); 
 
 %alpha
 EEG_comp = freq_alpha.trial{1}; 
-[bhi_CSI_alpha, bhi_CVI_alpha, bhi_alpha_CSI, bhi_alpha_CVI, ~, ~] = mode_psv_sdg(EEG_comp, IBI, t_IBI, CSI, CVI, Fs, time, wind); 
+[bhi_CSI_alpha, bhi_CVI_alpha, bhi_alpha_CSI, bhi_alpha_CVI, ~, ~] = model_psv_sdg(EEG_comp, IBI, t_IBI, CSI, CVI, Fs, time, wind); 
 
 %beta
 EEG_comp = freq_beta.trial{1}; 
-[bhi_CSI_beta, bhi_CVI_beta, bhi_beta_CSI, bhi_beta_CVI, ~, ~] = mode_psv_sdg(EEG_comp, IBI, t_IBI, CSI, CVI, Fs, time, wind); 
+[bhi_CSI_beta, bhi_CVI_beta, bhi_beta_CSI, bhi_beta_CVI, ~, ~] = model_psv_sdg(EEG_comp, IBI, t_IBI, CSI, CVI, Fs, time, wind); 
 
 %gamma
 EEG_comp = freq_gamma.trial{1}; 
-[bhi_CSI_gamma, bhi_CVI_gamma, bhi_gamma_CSI, bhi_gamma_CVI, ~, ~] = mode_psv_sdg(EEG_comp, IBI, t_IBI, CSI, CVI, Fs, time, wind); 
+[bhi_CSI_gamma, bhi_CVI_gamma, bhi_gamma_CSI, bhi_gamma_CVI, ~, ~] = model_psv_sdg(EEG_comp, IBI, t_IBI, CSI, CVI, Fs, time, wind); 
 
 struct_sdg = struct;
 struct_sdg.time = time;
 struct_sdg.timea = timea;
 struct_sdg.timed = timed;
+struct_sdg.CSI = CSI;
+struct_sdg.CVI = CVI;
+struct_sdg.freq_delta = freq_delta;
+struct_sdg.freq_theta = freq_theta;
+struct_sdg.freq_alpha = freq_alpha;
+struct_sdg.freq_beta = freq_beta;
+struct_sdg.freq_gamma = freq_gamma;
 struct_sdg.bhi_delta_CSI = bhi_delta_CSI ;
 struct_sdg.bhi_delta_CVI = bhi_delta_CVI;
 struct_sdg.bhi_theta_CSI = bhi_theta_CSI;

@@ -72,9 +72,27 @@ for i = 1:nt
     TM(i) = time(ixm);
 end
 
+
 %% interpolation (edges are extended to avoid extrapolation)
-Cs = interp1(TM, Cs , time, 'spline');
-Cp = interp1(TM, Cp , time, 'spline');
+t1 = max([time(1) TM(1)]);
+t2 = min([time(end) TM(end)]);
+time2 = time(time >=t1 & time <=t2);
+
+Cs = interp1(TM, Cs , time2, 'spline');
+Cp = interp1(TM, Cp , time2, 'spline');
+
+CSI = interp1(time, CSI , time2, 'spline');
+CVI = interp1(time, CVI , time2, 'spline');
+
+EEG_old = EEG_comp;
+[Nch, Nt] = size(EEG_old);
+clear EEG_comp
+
+for i = 1 : Nch
+    EEG_comp(i,:) = interp1(time, EEG_old(i,:), time2, 'spline');
+end
+
+time = time2;
 
 % Optional
 
