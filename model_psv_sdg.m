@@ -95,7 +95,7 @@ end
 time = time2;
 
 % Optional
-
+EEG_comp = clean_artif(EEG_comp);
 % EEG_comp = sqrt(EEG_comp);
 % Cs = Cs / std(Cs);
 % Cp = Cp / std(Cp);
